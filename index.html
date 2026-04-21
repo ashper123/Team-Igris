@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Project Board</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Light mode */
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f8;
+    --surface: #f2f2f7;
+    --surface-elevated: #ffffff;
+    --surface-overlay: rgba(0, 0, 0, 0.02);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-light: rgba(0, 0, 0, 0.04);
+    --text-primary: #000000;
+    --text-secondary: #86868b;
+    --text-tertiary: #c7c7cc;
+    --radius: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --font: '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', system-ui, sans-serif;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.1);
+    --transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    
+    /* Color palette */
+    --accent-primary: #007AFF;
+    --accent-secondary: #5AC8FA;
+    --success: #34C759;
+    --warning: #FF9500;
+    --critical: #FF3B30;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --bg-secondary: #0a0a0a;
+      --surface: #1c1c1e;
+      --surface-elevated: #2c2c2e;
+      --surface-overlay: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.1);
+      --border-light: rgba(255, 255, 255, 0.05);
+      --text-primary: #ffffff;
+      --text-secondary: #8e8e93;
+      --text-tertiary: #424245;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap');
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* ── Header / Viewing Zone ─────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--surface-elevated);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left {
+    flex: 1;
+  }
+
+  .header-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .btn-action {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-action:hover {
+    background: var(--surface-overlay);
+    border-color: var(--border);
+  }
+
+  .btn-action:active {
+    transform: scale(0.97);
+  }
+
+  @media (max-width: 600px) {
+    .header {
+      padding: 12px 16px;
+    }
+    .header-title {
+      font-size: 24px;
+    }
+  }
+
+  /* ── Stats / Progress Zone ─────────────────────────────────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border-light);
+    overflow-x: auto;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    min-width: 140px;
+    transition: all var(--transition);
+  }
+
+  .stat-card:hover {
+    background: var(--surface-overlay);
+    border-color: var(--border);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .stat-num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .stat-bar {
+    height: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .stat-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ── Main Content Area ─────────────────────────────────────── */
+  .content-zone {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Columns ────────────────────────────────────────────────── */
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  .column {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    transition: all var(--transition);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .column.drag-over {
+    border-color: var(--accent-primary);
+    background: var(--surface-overlay);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+  }
+
+  .col-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .col-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .col-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+  }
+
+  .col-count {
+    margin-left: auto;
+    background: var(--surface-overlay);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .column-tasks {
+    margin-bottom: 12px;
+    min-height: 60px;
+  }
+
+  /* ── Task Card ─────────────────────────────────────────────── */
+  .task-card {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: grab;
+    position: relative;
+    transition: all var(--transition);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .task-card:hover {
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+  }
+
+  .task-card:active {
+    cursor: grabbing;
+  }
+
+  .task-card.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+
+  .priority-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+  }
+
+  .task-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--transition), color var(--transition);
+    font-size: 14px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .task-card:hover .task-delete {
+    opacity: 1;
+  }
+
+  .task-delete:hover {
+    background: var(--surface);
+    color: var(--critical);
+  }
+
+  .task-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-primary);
+    padding-right: 24px;
+    letter-spacing: -0.2px;
+  }
+
+  .task-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .task-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+  }
+
+  .tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .tag-ai {
+    background: rgba(0, 122, 255, 0.08);
+    color: var(--accent-primary);
+    border-color: rgba(0, 122, 255, 0.2);
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: auto;
+    flex-shrink: 0;
+    border: 2px solid var(--surface);
+  }
+
+  /* ── Empty state ────────────────────────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 32px 12px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+    background: var(--surface-overlay);
+  }
+
+  /* ── Drag placeholder ───────────────────────────────────────── */
+  .drag-placeholder {
+    border: 2px dashed var(--accent-primary);
+    border-radius: var(--radius-md);
+    height: 70px;
+    margin-bottom: 10px;
+    background: rgba(0, 122, 255, 0.05);
+    transition: all var(--transition);
+  }
+
+  /* ── Add button ────────────────────────────────────────────── */
+  .add-btn {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: var(--font);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+  }
+
+  .add-btn:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  .add-btn:active {
+    transform: scale(0.98);
+  }
+
+  /* ── Add form ───────────────────────────────────────────────── */
+  .add-form {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .add-form input,
+  .add-form textarea,
+  .add-form select {
+    width: 100%;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: var(--font);
+    background: var(--surface);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition);
+    min-height: 44px;
+  }
+
+  .add-form input:focus,
+  .add-form textarea:focus,
+  .add-form select:focus {
+    border-color: var(--accent-primary);
+    background: var(--surface-overlay);
+  }
+
+  .add-form input::placeholder,
+  .add-form textarea::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .add-form textarea {
+    resize: none;
+    height: 80px;
+    line-height: 1.5;
+  }
+
+  .add-form select option {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
+  .form-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .form-row input,
+  .form-row select {
+    flex: 1;
+  }
+
+  .ai-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-hint {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+  }
+
+  .ai-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 122, 255, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+    color: var(--accent-primary);
+    transition: all var(--transition);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    min-height: 44px;
+  }
+
+  .ai-btn:hover:not(:disabled) {
+    background: rgba(0, 122, 255, 0.08);
+    border-color: rgba(0, 122, 255, 0.5);
+  }
+
+  .ai-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .ai-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(0, 122, 255, 0.2);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+
+  .btn-cancel {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font);
+    color: var(--text-primary);
+    transition: all var(--transition);
+    font-weight: 500;
+    min-height: 44px;
+  }
+
+  .btn-cancel:hover {
+    background: var(--surface-overlay);
+    border-color: var(--border);
+  }
+
+  .btn-cancel:active {
+    transform: scale(0.97);
+  }
+
+  .btn-save {
+    background: var(--accent-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    color: #ffffff;
+    transition: all var(--transition);
+    min-height: 44px;
+  }
+
+  .btn-save:hover:not(:disabled) {
+    background: #0051CC;
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-save:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .btn-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ── Scrollbar ────────────────────────────────────────────── */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+    transition: background 0.3s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-light);
+  }
+
+  /* ── Responsive Adjustments ────────────────────────────────── */
+  @media (max-width: 768px) {
+    .content-zone {
+      padding: 16px;
+    }
+
+    .columns {
+      grid-template-columns: 1fr;
+    }
+
+    .stats {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+  }
+
+  @media (max-width: 480px) {
+    .header {
+      padding: 12px 16px;
+    }
+
+    .header-title {
+      font-size: 20px;
+    }
+
+    .content-zone {
+      padding: 12px;
+    }
+
+    .columns {
+      gap: 12px;
+    }
+
+    .stat-num {
+      font-size: 24px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const COLS = [
+  { id:"todo",       label:"To do",       accent:"#007AFF", bg:"rgba(0, 122, 255, 0.08)" },
+  { id:"inprogress", label:"In progress", accent:"#FF9500", bg:"rgba(255, 149, 0, 0.08)" },
+  { id:"done",       label:"Done",        accent:"#34C759", bg:"rgba(52, 199, 89, 0.08)" },
+];
+
+const PRIORITY_COLORS = { high:"#FF3B30", medium:"#FF9500", low:"#34C759" };
+
+const AVATARS = [
+  { bg:"#312e81", c:"#a5b4fc" },
+  { bg:"#78350f", c:"#fcd34d" },
+  { bg:"#064e3b", c:"#6ee7b7" },
+  { bg:"#831843", c:"#f9a8d4" },
+  { bg:"#1e1b4b", c:"#c4b5fd" },
+];
+
+let tasks = [
+  { id:"t1", col:"todo",       title:"Design system audit",        desc:"Review all UI components for visual consistency and update the component library documentation with usage guidelines.",  priority:"high",   tags:["design","ux"],        initials:"AS", ai:false },
+  { id:"t2", col:"todo",       title:"Set up CI/CD pipeline",      desc:"Configure automated testing and deployment workflows using GitHub Actions for staging and production environments.",      priority:"medium", tags:["devops","infra"],     initials:"BK", ai:false },
+  { id:"t3", col:"todo",       title:"Write API documentation",    desc:"Document all REST endpoints with request/response examples and error codes using OpenAPI 3.0 specification.",           priority:"low",    tags:["docs"],               initials:"CL", ai:false },
+  { id:"t4", col:"inprogress", title:"User authentication flow",   desc:"Implement OAuth2 login with Google and GitHub, including secure session management and refresh token rotation.",         priority:"high",   tags:["auth","backend"],     initials:"BK", ai:false },
+  { id:"t5", col:"inprogress", title:"Dashboard analytics module", desc:"Build interactive charts for user engagement metrics with date range filtering and CSV export functionality.",           priority:"medium", tags:["frontend","data"],    initials:"AS", ai:false },
+  { id:"t6", col:"done",       title:"Database schema design",     desc:"Finalized the ERD and migration scripts for all core product tables. Reviewed and approved by the backend team.",       priority:"high",   tags:["db","backend"],       initials:"CL", ai:false },
+  { id:"t7", col:"done",       title:"Onboarding wireframes",      desc:"Delivered low and high fidelity wireframes for the new user onboarding experience, approved by stakeholders.",           priority:"low",    tags:["design","product"],   initials:"AS", ai:false },
+];
+
+let dragId      = null;
+let dragOverCol = null;
+let showAddCol  = null;
+let aiLoading   = false;
+let aiWasUsed   = false;
+let idCounter   = 200;
+
+let form = { title:"", desc:"", priority:"medium", tags:"" };
+
+/* ─── Render ───────────────────────────────────────────────── */
+function render() {
+  const app    = document.getElementById("app");
+  const counts = {};
+  COLS.forEach(c => { counts[c.id] = tasks.filter(t => t.col === c.id).length; });
+  const total  = tasks.length || 1;
+
+  app.innerHTML = `
+  <div class="header">
+    <div class="header-left">
+      <div class="header-title">Project Board</div>
+      <div class="header-sub">Q2 Sprint · ${tasks.length} tasks · 3 members</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-action" onclick="clearDone()">✓ Clear done</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    ${COLS.map(col => {
+      const percent = Math.round(counts[col.id]/total*100);
+      return `
+    <div class="stat-card">
+      <div class="stat-label" style="color:${col.accent}">${col.label}</div>
+      <div class="stat-num">${counts[col.id]}</div>
+      <div class="stat-bar">
+        <div class="stat-fill" style="width:${percent}%;background:${col.accent}"></div>
+      </div>
+    </div>`;
+    }).join("")}
+  </div>
+
+  <div class="content-zone">
+    <div class="columns">
+      ${COLS.map(col => renderColumn(col, counts)).join("")}
+    </div>
+  </div>`;
+}
+
+function renderColumn(col, counts) {
+  const colTasks = tasks.filter(t => t.col === col.id);
+  const over     = dragOverCol === col.id;
+
+  return `
+  <div class="column${over ? " drag-over" : ""}" 
+    ondragover="onDragOver(event,'${col.id}')"
+    ondrop="onDrop('${col.id}')"
+    ondragleave="onDragLeave('${col.id}')">
+
+    <div class="col-header">
+      <div class="col-dot" style="background:${col.accent}"></div>
+      <span class="col-title">${col.label}</span>
+      <span class="col-count">${colTasks.length}</span>
+    </div>
+
+    <div class="column-tasks">
+      ${colTasks.length === 0 && !over
+        ? `<div class="empty-state">No tasks yet. Add one to get started.</div>`
+        : colTasks.map(t => renderCard(t)).join("")}
+
+      ${over && dragId ? `<div class="drag-placeholder"></div>` : ""}
+    </div>
+
+    ${showAddCol === col.id
+      ? renderForm(col)
+      : `<button class="add-btn" onclick="openForm('${col.id}')">+ Add task</button>`}
+  </div>`;
+}
+
+function renderCard(task) {
+  const i  = ["AS","BK","CL"].indexOf(task.initials);
+  const av = AVATARS[Math.max(0, i % AVATARS.length)];
+
+  return `
+  <div class="task-card${dragId === task.id ? " dragging" : ""}"
+    draggable="true"
+    ondragstart="onDragStart('${task.id}')"
+    ondragend="onDragEnd()">
+    <div class="priority-bar" style="background:${PRIORITY_COLORS[task.priority]}"></div>
+    <button class="task-delete" onclick="deleteTask('${task.id}')" title="Delete task">✕</button>
+    <div class="task-title">${escHtml(task.title)}</div>
+    ${task.desc ? `<div class="task-desc">${escHtml(task.desc)}</div>` : ""}
+    <div class="task-footer">
+      ${task.tags.map(tg => `<span class="tag">${escHtml(tg)}</span>`).join("")}
+      ${task.ai ? `<span class="tag tag-ai">✦ AI</span>` : ""}
+      <div class="avatar" style="background:${av.bg};color:${av.c}">${task.initials}</div>
+    </div>
+  </div>`;
+}
+
+function renderForm(col) {
+  return `
+  <div class="add-form">
+    <input type="text" placeholder="Task title..." value="${escAttr(form.title)}"
+      oninput="form.title=this.value" id="f-title" />
+    <div class="ai-row">
+      <button class="ai-btn" id="ai-btn" onclick="generateAI()"
+        ${!form.title.trim() || aiLoading ? "disabled" : ""}>
+        ${aiLoading
+          ? `<div class="spinner"></div> Generating...`
+          : `✦ Generate with AI`}
+      </button>
+      <span class="ai-hint">auto-fill description & tags</span>
+    </div>
+    <textarea placeholder="Description (optional)..."
+      oninput="form.desc=this.value">${escHtml(form.desc)}</textarea>
+    <div class="form-row">
+      <select onchange="form.priority=this.value">
+        <option value="high"   ${form.priority==="high"   ?"selected":""}>High priority</option>
+        <option value="medium" ${form.priority==="medium" ?"selected":""}>Medium priority</option>
+        <option value="low"    ${form.priority==="low"    ?"selected":""}>Low priority</option>
+      </select>
+      <input type="text" placeholder="Tags (comma separated)"
+        value="${escAttr(form.tags)}" oninput="form.tags=this.value" />
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="cancelForm()">Cancel</button>
+      <button class="btn-save"
+        onclick="saveTask('${col.id}')"
+        ${!form.title.trim() ? "disabled" : ""}>Add task</button>
+    </div>
+  </div>`;
+}
+
+/* ─── Drag & Drop ─────────────────────────────────────────── */
+function onDragStart(id)      { dragId = id; render(); }
+function onDragEnd()          { dragId = null; dragOverCol = null; render(); }
+function onDragOver(e, col)   { e.preventDefault(); if (dragOverCol !== col) { dragOverCol = col; render(); } }
+function onDragLeave(col)     { if (dragOverCol === col) { dragOverCol = null; render(); } }
+function onDrop(col) {
+  if (dragId) tasks = tasks.map(t => t.id === dragId ? { ...t, col } : t);
+  dragId = null; dragOverCol = null; render();
+}
+
+/* ─── Task Actions ────────────────────────────────────────── */
+function deleteTask(id) { tasks = tasks.filter(t => t.id !== id); render(); }
+function clearDone()    { tasks = tasks.filter(t => t.col !== "done"); render(); }
+
+function openForm(col) {
+  showAddCol = col;
+  form = { title:"", desc:"", priority:"medium", tags:"" };
+  aiWasUsed = false;
+  render();
+  setTimeout(() => { const el = document.getElementById("f-title"); if (el) el.focus(); }, 0);
+}
+
+function cancelForm() { showAddCol = null; render(); }
+
+function saveTask(col) {
+  if (!form.title.trim()) return;
+  const tags = form.tags.split(",").map(s => s.trim()).filter(Boolean);
+  tasks.push({
+    id: "t" + (++idCounter),
+    col,
+    title:    form.title,
+    desc:     form.desc,
+    priority: form.priority,
+    tags,
+    initials: "ME",
+    ai:       aiWasUsed,
+  });
+  showAddCol = null;
+  aiWasUsed  = false;
+  render();
+}
+
+/* ─── AI Generation ───────────────────────────────────────── */
+async function generateAI() {
+  const title = form.title.trim();
+  if (!title || aiLoading) return;
+  aiLoading = true;
+  render();
+
+  try {
+    const apiUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001/api/generate-ai'
+      : '/api/generate-ai';
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    form.desc = data.description || '';
+    form.tags = (data.tags || []).join(', ');
+    aiWasUsed = true;
+
+  } catch (err) {
+    console.error('AI error:', err);
+    alert(`AI generation failed: ${err.message}\n\nMake sure the backend server is running:\nnpm install\nnode server.js`);
+  }
+
+  aiLoading = false;
+  render();
+  setTimeout(() => { const el = document.getElementById("f-title"); if (el) el.focus(); }, 0);
+}
+
+/* ─── Utilities ───────────────────────────────────────────── */
+function escHtml(s)  { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escAttr(s)  { return String(s).replace(/"/g,"&quot;"); }
+
+/* ─── Boot ────────────────────────────────────────────────── */
+render();
+</script>
+</body>
+</html>
