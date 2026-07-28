@@ -1,4 +1,4 @@
-# Kanban Project Board
+# Nanban Project Board
 
 A modern, responsive project management board built with vanilla HTML, CSS, and JavaScript. Features drag-and-drop task management and AI-powered task generation using Google's Gemini API.
 
